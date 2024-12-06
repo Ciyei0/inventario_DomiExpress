@@ -8,5 +8,6 @@
         public int CantidadVendida { get; set; }
         public DateTime FechaVenta { get; set; } = DateTime.Now;
         public decimal Total { get; set; }
+
     }
 }
