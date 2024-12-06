@@ -1,5 +1,8 @@
-﻿namespace Domi_Express.Models
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace Domi_Express.Models
 {
+    [Table("producto")] // Esto asegura que EF mapee correctamente a la tabla `producto`
     public class Producto
     {
         public int Id { get; set; }
