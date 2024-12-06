@@ -1,18 +1,18 @@
 using Microsoft.EntityFrameworkCore;
-using Domi_Express.Models;
+using Domi_Express.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Agregar servicios al contenedor
 builder.Services.AddControllersWithViews();
 
-// Configuración del contexto de base de datos
+// Configurar el contexto de base de datos
 builder.Services.AddDbContext<DomiExpressContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 var app = builder.Build();
 
-// Configuración del pipeline de solicitudes HTTP
+// Configurar el pipeline de solicitudes HTTP
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
