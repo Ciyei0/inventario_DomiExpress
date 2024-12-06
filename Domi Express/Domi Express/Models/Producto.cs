@@ -7,10 +7,11 @@
         public decimal Precio { get; set; }
         public string? Descripcion { get; set; }
 
-        // Relaciones
+        // Relación con Categoría
         public int CategoriaId { get; set; }
         public Categoria Categoria { get; set; }
 
+        // Relación con Proveedor
         public int ProveedorId { get; set; }
         public Proveedor Proveedor { get; set; }
     }

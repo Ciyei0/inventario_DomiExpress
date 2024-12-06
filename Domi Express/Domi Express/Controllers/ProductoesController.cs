@@ -22,14 +22,16 @@ namespace Domi_Express.Controllers
         // GET: Productoes
         public async Task<IActionResult> Index()
         {
-            var domiExpressContext = _context.Productos.Include(p => p.Categoria).Include(p => p.Proveedor);
+            var domiExpressContext = _context.Productos
+                .Include(p => p.Categoria)
+                .Include(p => p.Proveedor);
             return View(await domiExpressContext.ToListAsync());
         }
 
         // GET: Productoes/Details/5
         public async Task<IActionResult> Details(int? id)
         {
-            if (id == null)
+            if (id == null || _context.Productos == null)
             {
                 return NotFound();
             }
@@ -49,33 +51,38 @@ namespace Domi_Express.Controllers
         // GET: Productoes/Create
         public IActionResult Create()
         {
-            ViewData["CategoriaId"] = new SelectList(_context.Categorias, "Id", "Id");
-            ViewData["ProveedorId"] = new SelectList(_context.Proveedores, "Id", "Id");
+            ViewData["CategoriaId"] = new SelectList(_context.Categorias, "Id", "Nombre");
+            ViewData["ProveedorId"] = new SelectList(_context.Proveedores, "Id", "Nombre");
             return View();
         }
 
         // POST: Productoes/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Id,Nombre,Precio,Descripcion,CategoriaId,ProveedorId")] Producto producto)
         {
             if (ModelState.IsValid)
             {
-                _context.Add(producto);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                try
+                {
+                    _context.Add(producto);
+                    await _context.SaveChangesAsync();
+                    return RedirectToAction(nameof(Index));
+                }
+                catch (Exception ex)
+                {
+                    ModelState.AddModelError("", $"Error al guardar los datos: {ex.Message}");
+                }
             }
-            ViewData["CategoriaId"] = new SelectList(_context.Categorias, "Id", "Id", producto.CategoriaId);
-            ViewData["ProveedorId"] = new SelectList(_context.Proveedores, "Id", "Id", producto.ProveedorId);
+            ViewData["CategoriaId"] = new SelectList(_context.Categorias, "Id", "Nombre", producto.CategoriaId);
+            ViewData["ProveedorId"] = new SelectList(_context.Proveedores, "Id", "Nombre", producto.ProveedorId);
             return View(producto);
         }
 
         // GET: Productoes/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
-            if (id == null)
+            if (id == null || _context.Productos == null)
             {
                 return NotFound();
             }
@@ -85,14 +92,12 @@ namespace Domi_Express.Controllers
             {
                 return NotFound();
             }
-            ViewData["CategoriaId"] = new SelectList(_context.Categorias, "Id", "Id", producto.CategoriaId);
-            ViewData["ProveedorId"] = new SelectList(_context.Proveedores, "Id", "Id", producto.ProveedorId);
+            ViewData["CategoriaId"] = new SelectList(_context.Categorias, "Id", "Nombre", producto.CategoriaId);
+            ViewData["ProveedorId"] = new SelectList(_context.Proveedores, "Id", "Nombre", producto.ProveedorId);
             return View(producto);
         }
 
         // POST: Productoes/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("Id,Nombre,Precio,Descripcion,CategoriaId,ProveedorId")] Producto producto)
@@ -108,29 +113,22 @@ namespace Domi_Express.Controllers
                 {
                     _context.Update(producto);
                     await _context.SaveChangesAsync();
+                    return RedirectToAction(nameof(Index));
                 }
-                catch (DbUpdateConcurrencyException)
+                catch (DbUpdateException ex)
                 {
-                    if (!ProductoExists(producto.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
+                    ModelState.AddModelError("", $"Error al actualizar los datos: {ex.Message}");
                 }
-                return RedirectToAction(nameof(Index));
             }
-            ViewData["CategoriaId"] = new SelectList(_context.Categorias, "Id", "Id", producto.CategoriaId);
-            ViewData["ProveedorId"] = new SelectList(_context.Proveedores, "Id", "Id", producto.ProveedorId);
+            ViewData["CategoriaId"] = new SelectList(_context.Categorias, "Id", "Nombre", producto.CategoriaId);
+            ViewData["ProveedorId"] = new SelectList(_context.Proveedores, "Id", "Nombre", producto.ProveedorId);
             return View(producto);
         }
 
         // GET: Productoes/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
-            if (id == null)
+            if (id == null || _context.Productos == null)
             {
                 return NotFound();
             }
@@ -152,6 +150,10 @@ namespace Domi_Express.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
+            if (_context.Productos == null)
+            {
+                return Problem("Entity set 'DomiExpressContext.Productos'  is null.");
+            }
             var producto = await _context.Productos.FindAsync(id);
             if (producto != null)
             {
@@ -164,7 +166,7 @@ namespace Domi_Express.Controllers
 
         private bool ProductoExists(int id)
         {
-            return _context.Productos.Any(e => e.Id == id);
+            return (_context.Productos?.Any(e => e.Id == id)).GetValueOrDefault();
         }
     }
 }
