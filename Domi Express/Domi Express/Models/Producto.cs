@@ -1,21 +1,27 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using Domi_Express.Models;
+using System.ComponentModel.DataAnnotations;
 
-namespace Domi_Express.Models
+public class Producto
 {
-    [Table("producto")] // Esto asegura que EF mapee correctamente a la tabla `producto`
-    public class Producto
-    {
-        public int Id { get; set; }
-        public string Nombre { get; set; }
-        public decimal Precio { get; set; }
-        public string? Descripcion { get; set; }
+    public int Id { get; set; }
 
-        // Relación con Categoría
-        public int CategoriaId { get; set; }
-        public Categoria Categoria { get; set; }
+    [Required]
+    [StringLength(100)]
+    public string Nombre { get; set; }
 
-        // Relación con Proveedor
-        public int ProveedorId { get; set; }
-        public Proveedor Proveedor { get; set; }
-    }
+    [Required]
+    [Range(0.01, 10000)]
+    public decimal Precio { get; set; }
+
+    [StringLength(255)]
+    public string Descripcion { get; set; }
+
+    [Required]
+    public int CategoriaId { get; set; }
+
+    [Required]
+    public int ProveedorId { get; set; }
+
+    public Categoria Categoria { get; set; }
+    public Proveedor Proveedor { get; set; }
 }

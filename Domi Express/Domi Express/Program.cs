@@ -12,7 +12,7 @@ builder.Services.AddDbContext<DomiExpressContext>(options =>
 
 var app = builder.Build();
 
-// Configurar el pipeline de solicitudes HTTP
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
