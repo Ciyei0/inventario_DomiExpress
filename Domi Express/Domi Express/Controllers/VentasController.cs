@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -22,8 +21,9 @@ namespace Domi_Express.Controllers
         // GET: Ventas
         public async Task<IActionResult> Index()
         {
-            var domiExpressContext = _context.Ventas.Include(v => v.Producto);
-            return View(await domiExpressContext.ToListAsync());
+            var ventas = _context.Ventas
+                .Include(v => v.Producto);
+            return View(await ventas.ToListAsync());
         }
 
         // GET: Ventas/Details/5
@@ -48,24 +48,53 @@ namespace Domi_Express.Controllers
         // GET: Ventas/Create
         public IActionResult Create()
         {
-            ViewData["ProductoId"] = new SelectList(_context.Productos, "Id", "Id");
+            ViewData["ProductoId"] = new SelectList(_context.Productos, "Id", "Nombre");
             return View();
         }
 
         // POST: Ventas/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Id,ProductoId,CantidadVendida,FechaVenta,Total")] Venta venta)
         {
             if (ModelState.IsValid)
             {
-                _context.Add(venta);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                try
+                {
+                    // Obtener el producto asociado
+                    var producto = await _context.Productos.FindAsync(venta.ProductoId);
+                    if (producto == null)
+                    {
+                        ModelState.AddModelError("", "El producto seleccionado no existe.");
+                        ViewData["ProductoId"] = new SelectList(_context.Productos, "Id", "Nombre", venta.ProductoId);
+                        return View(venta);
+                    }
+
+                    // Verificar el stock disponible
+                    var stock = await _context.Stocks.FirstOrDefaultAsync(s => s.ProductoId == venta.ProductoId);
+                    if (stock == null || stock.CantidadDisponible < venta.CantidadVendida)
+                    {
+                        ModelState.AddModelError("", "No hay suficiente stock disponible para realizar la venta.");
+                        ViewData["ProductoId"] = new SelectList(_context.Productos, "Id", "Nombre", venta.ProductoId);
+                        return View(venta);
+                    }
+
+                    // Actualizar el stock
+                    stock.CantidadDisponible -= venta.CantidadVendida;
+                    venta.Total = producto.Precio * venta.CantidadVendida;
+
+                    _context.Add(venta);
+                    _context.Update(stock);
+                    await _context.SaveChangesAsync();
+                    return RedirectToAction(nameof(Index));
+                }
+                catch (Exception ex)
+                {
+                    ModelState.AddModelError("", $"Ocurrió un error al guardar la venta: {ex.Message}");
+                }
             }
-            ViewData["ProductoId"] = new SelectList(_context.Productos, "Id", "Id", venta.ProductoId);
+
+            ViewData["ProductoId"] = new SelectList(_context.Productos, "Id", "Nombre", venta.ProductoId);
             return View(venta);
         }
 
@@ -82,13 +111,12 @@ namespace Domi_Express.Controllers
             {
                 return NotFound();
             }
-            ViewData["ProductoId"] = new SelectList(_context.Productos, "Id", "Id", venta.ProductoId);
+
+            ViewData["ProductoId"] = new SelectList(_context.Productos, "Id", "Nombre", venta.ProductoId);
             return View(venta);
         }
 
         // POST: Ventas/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("Id,ProductoId,CantidadVendida,FechaVenta,Total")] Venta venta)
@@ -104,21 +132,15 @@ namespace Domi_Express.Controllers
                 {
                     _context.Update(venta);
                     await _context.SaveChangesAsync();
+                    return RedirectToAction(nameof(Index));
                 }
-                catch (DbUpdateConcurrencyException)
+                catch (DbUpdateException ex)
                 {
-                    if (!VentaExists(venta.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
+                    ModelState.AddModelError("", $"Error al actualizar la venta: {ex.Message}");
                 }
-                return RedirectToAction(nameof(Index));
             }
-            ViewData["ProductoId"] = new SelectList(_context.Productos, "Id", "Id", venta.ProductoId);
+
+            ViewData["ProductoId"] = new SelectList(_context.Productos, "Id", "Nombre", venta.ProductoId);
             return View(venta);
         }
 
@@ -150,9 +172,8 @@ namespace Domi_Express.Controllers
             if (venta != null)
             {
                 _context.Ventas.Remove(venta);
+                await _context.SaveChangesAsync();
             }
-
-            await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
