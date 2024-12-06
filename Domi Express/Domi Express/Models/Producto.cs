@@ -7,7 +7,7 @@
         public decimal Precio { get; set; }
         public string? Descripcion { get; set; }
 
-        // Llaves foráneas
+        // Relaciones
         public int CategoriaId { get; set; }
         public Categoria Categoria { get; set; }
 
