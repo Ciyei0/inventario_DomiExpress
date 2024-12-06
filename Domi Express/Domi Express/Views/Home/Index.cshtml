@@ -1,8 +1,60 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Inicio";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="container">
+    <div class="row">
+        <!-- Tarjeta de Bienvenida -->
+        <div class="col-12">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5>Bienvenido al Sistema de Inventario de Domi Express</h5>
+                </div>
+                <div class="card-body">
+                    <p>Gestiona tus productos, proveedores, ventas y más desde este panel de control.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Tarjeta de Productos -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card text-center">
+                <div class="card-header bg-info text-white">
+                    <h5>Productos</h5>
+                </div>
+                <div class="card-body">
+                    <p>Gestión de todos los productos del inventario.</p>
+                    <a class="btn btn-info" asp-controller="Productoes" asp-action="Index">Ver Productos</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tarjeta de Ventas -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card text-center">
+                <div class="card-header bg-success text-white">
+                    <h5>Ventas</h5>
+                </div>
+                <div class="card-body">
+                    <p>Consulta y registra las ventas realizadas.</p>
+                    <a class="btn btn-success" asp-controller="Ventas" asp-action="Index">Ver Ventas</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tarjeta de Proveedores -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card text-center">
+                <div class="card-header bg-warning text-white">
+                    <h5>Proveedores</h5>
+                </div>
+                <div class="card-body">
+                    <p>Gestión de proveedores asociados al inventario.</p>
+                    <a class="btn btn-warning" asp-controller="Proveedor" asp-action="Index">Ver Proveedores</a>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
