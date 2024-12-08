@@ -2,7 +2,7 @@
 
 namespace Domi_Express.Models
 {
-    [Table("producto")] // Esto asegura que EF mapee correctamente a la tabla `producto`
+    [Table("productos")]
     public class Producto
     {
         public int Id { get; set; }

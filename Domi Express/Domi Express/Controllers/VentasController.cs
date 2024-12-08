@@ -1,5 +1,4 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -9,6 +8,7 @@ using Domi_Express.Models;
 
 namespace Domi_Express.Controllers
 {
+    [Route("Venta")]
     public class VentasController : Controller
     {
         private readonly DomiExpressContext _context;
@@ -18,113 +18,69 @@ namespace Domi_Express.Controllers
             _context = context;
         }
 
-        // GET: Ventas
+        // GET: Venta
+        [HttpGet("")]
         public async Task<IActionResult> Index()
         {
-            var ventas = _context.Ventas
-                .Include(v => v.Producto);
-            return View(await ventas.ToListAsync());
+            return View(await _context.Ventas.Include(v => v.Producto).ToListAsync());
         }
 
-        // GET: Ventas/Details/5
+        // GET: Venta/Details/5
+        [HttpGet("Details/{id}")]
         public async Task<IActionResult> Details(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
 
             var venta = await _context.Ventas
                 .Include(v => v.Producto)
                 .FirstOrDefaultAsync(m => m.Id == id);
-            if (venta == null)
-            {
-                return NotFound();
-            }
+            if (venta == null) return NotFound();
 
             return View(venta);
         }
 
-        // GET: Ventas/Create
+        // GET: Venta/Create
+        [HttpGet("Create")]
         public IActionResult Create()
         {
-            ViewData["ProductoId"] = new SelectList(_context.Productos, "Id", "Nombre");
+            ViewBag.ProductoId = new SelectList(_context.Productos, "Id", "Nombre");
             return View();
         }
 
-        // POST: Ventas/Create
-        [HttpPost]
+        // POST: Venta/Create
+        [HttpPost("Create")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,ProductoId,CantidadVendida,FechaVenta,Total")] Venta venta)
+        public async Task<IActionResult> Create(Venta venta)
         {
             if (ModelState.IsValid)
             {
-                try
-                {
-                    // Obtener el producto asociado
-                    var producto = await _context.Productos.FindAsync(venta.ProductoId);
-                    if (producto == null)
-                    {
-                        ModelState.AddModelError("", "El producto seleccionado no existe.");
-                        ViewData["ProductoId"] = new SelectList(_context.Productos, "Id", "Nombre", venta.ProductoId);
-                        return View(venta);
-                    }
-
-                    // Verificar el stock disponible
-                    var stock = await _context.Stocks.FirstOrDefaultAsync(s => s.ProductoId == venta.ProductoId);
-                    if (stock == null || stock.CantidadDisponible < venta.CantidadVendida)
-                    {
-                        ModelState.AddModelError("", "No hay suficiente stock disponible para realizar la venta.");
-                        ViewData["ProductoId"] = new SelectList(_context.Productos, "Id", "Nombre", venta.ProductoId);
-                        return View(venta);
-                    }
-
-                    // Actualizar el stock
-                    stock.CantidadDisponible -= venta.CantidadVendida;
-                    venta.Total = producto.Precio * venta.CantidadVendida;
-
-                    _context.Add(venta);
-                    _context.Update(stock);
-                    await _context.SaveChangesAsync();
-                    return RedirectToAction(nameof(Index));
-                }
-                catch (Exception ex)
-                {
-                    ModelState.AddModelError("", $"Ocurrió un error al guardar la venta: {ex.Message}");
-                }
+                _context.Add(venta);
+                await _context.SaveChangesAsync();
+                return RedirectToAction(nameof(Index));
             }
-
-            ViewData["ProductoId"] = new SelectList(_context.Productos, "Id", "Nombre", venta.ProductoId);
+            ViewBag.ProductoId = new SelectList(_context.Productos, "Id", "Nombre", venta.ProductoId);
             return View(venta);
         }
 
-        // GET: Ventas/Edit/5
+        // GET: Venta/Edit/5
+        [HttpGet("Edit/{id}")]
         public async Task<IActionResult> Edit(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
 
             var venta = await _context.Ventas.FindAsync(id);
-            if (venta == null)
-            {
-                return NotFound();
-            }
+            if (venta == null) return NotFound();
 
-            ViewData["ProductoId"] = new SelectList(_context.Productos, "Id", "Nombre", venta.ProductoId);
+            ViewBag.ProductoId = new SelectList(_context.Productos, "Id", "Nombre", venta.ProductoId);
             return View(venta);
         }
 
-        // POST: Ventas/Edit/5
-        [HttpPost]
+        // POST: Venta/Edit/5
+        [HttpPost("Edit/{id}")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,ProductoId,CantidadVendida,FechaVenta,Total")] Venta venta)
+        public async Task<IActionResult> Edit(int id, Venta venta)
         {
-            if (id != venta.Id)
-            {
-                return NotFound();
-            }
+            if (id != venta.Id) return NotFound();
 
             if (ModelState.IsValid)
             {
@@ -134,37 +90,34 @@ namespace Domi_Express.Controllers
                     await _context.SaveChangesAsync();
                     return RedirectToAction(nameof(Index));
                 }
-                catch (DbUpdateException ex)
+                catch (DbUpdateConcurrencyException)
                 {
-                    ModelState.AddModelError("", $"Error al actualizar la venta: {ex.Message}");
+                    if (!VentaExists(venta.Id))
+                        return NotFound();
+                    else
+                        throw;
                 }
             }
-
-            ViewData["ProductoId"] = new SelectList(_context.Productos, "Id", "Nombre", venta.ProductoId);
+            ViewBag.ProductoId = new SelectList(_context.Productos, "Id", "Nombre", venta.ProductoId);
             return View(venta);
         }
 
-        // GET: Ventas/Delete/5
+        // GET: Venta/Delete/5
+        [HttpGet("Delete/{id}")]
         public async Task<IActionResult> Delete(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
 
             var venta = await _context.Ventas
                 .Include(v => v.Producto)
                 .FirstOrDefaultAsync(m => m.Id == id);
-            if (venta == null)
-            {
-                return NotFound();
-            }
+            if (venta == null) return NotFound();
 
             return View(venta);
         }
 
-        // POST: Ventas/Delete/5
-        [HttpPost, ActionName("Delete")]
+        // POST: Venta/Delete/5
+        [HttpPost("Delete/{id}"), ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {

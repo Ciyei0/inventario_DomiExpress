@@ -5,39 +5,25 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<h1>Create</h1>
+<h2>Crear Stock</h2>
 
-<h4>Stock</h4>
-<hr />
-<div class="row">
-    <div class="col-md-4">
-        <form asp-action="Create">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <div class="form-group">
-                <label asp-for="ProductoId" class="control-label"></label>
-                <select asp-for="ProductoId" class ="form-control" asp-items="ViewBag.ProductoId"></select>
-            </div>
-            <div class="form-group">
-                <label asp-for="CantidadDisponible" class="control-label"></label>
-                <input asp-for="CantidadDisponible" class="form-control" />
-                <span asp-validation-for="CantidadDisponible" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="FechaUltimaModificacion" class="control-label"></label>
-                <input asp-for="FechaUltimaModificacion" class="form-control" />
-                <span asp-validation-for="FechaUltimaModificacion" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <input type="submit" value="Create" class="btn btn-primary" />
-            </div>
-        </form>
+<form asp-action="Create" method="post">
+    <div class="form-group">
+        <label asp-for="ProductoId" class="control-label"></label>
+        <select asp-for="ProductoId" class="form-control" asp-items="ViewBag.ProductoId">
+            <option value="">-- Selecciona un Producto --</option>
+        </select>
+        <span asp-validation-for="ProductoId" class="text-danger"></span>
     </div>
-</div>
 
-<div>
-    <a asp-action="Index">Back to List</a>
-</div>
+    <div class="form-group">
+        <label asp-for="CantidadDisponible" class="control-label"></label>
+        <input asp-for="CantidadDisponible" class="form-control" />
+        <span asp-validation-for="CantidadDisponible" class="text-danger"></span>
+    </div>
 
-@section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
-}
+    <div class="form-group">
+        <button type="submit" class="btn btn-primary">Guardar</button>
+    </div>
+</form>
+

@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -10,6 +8,7 @@ using Domi_Express.Models;
 
 namespace Domi_Express.Controllers
 {
+    [Route("Producto")] // Rutas personalizadas
     public class ProductoesController : Controller
     {
         private readonly DomiExpressContext _context;
@@ -19,93 +18,72 @@ namespace Domi_Express.Controllers
             _context = context;
         }
 
-        // GET: Productoes
+        // GET: Producto
+        [HttpGet("")]
         public async Task<IActionResult> Index()
         {
-            var domiExpressContext = _context.Productos
-                .Include(p => p.Categoria)
-                .Include(p => p.Proveedor);
-            return View(await domiExpressContext.ToListAsync());
-        }
-
-        // GET: Productoes/Details/5
-        public async Task<IActionResult> Details(int? id)
-        {
-            if (id == null || _context.Productos == null)
-            {
-                return NotFound();
-            }
-
-            var producto = await _context.Productos
+            var productos = await _context.Productos
                 .Include(p => p.Categoria)
                 .Include(p => p.Proveedor)
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (producto == null)
-            {
-                return NotFound();
-            }
+                .ToListAsync();
+            return View(productos);
+        }
+
+        // GET: Producto/Details/5
+        [HttpGet("Details/{id}")]
+        public async Task<IActionResult> Details(int? id)
+        {
+            if (id == null) return NotFound();
+
+            var producto = await ObtenerProductoPorId(id);
+            if (producto == null) return NotFound();
 
             return View(producto);
         }
 
-        // GET: Productoes/Create
+        // GET: Producto/Create
+        [HttpGet("Create")]
         public IActionResult Create()
         {
-            ViewData["CategoriaId"] = new SelectList(_context.Categorias, "Id", "Nombre");
-            ViewData["ProveedorId"] = new SelectList(_context.Proveedores, "Id", "Nombre");
+            CargarListasDesplegables();
             return View();
         }
 
-        // POST: Productoes/Create
-        [HttpPost]
+        // POST: Producto/Create
+        [HttpPost("Create")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Nombre,Precio,Descripcion,CategoriaId,ProveedorId")] Producto producto)
+        public async Task<IActionResult> Create(Producto producto)
         {
             if (ModelState.IsValid)
             {
-                try
-                {
-                    _context.Add(producto);
-                    await _context.SaveChangesAsync();
-                    return RedirectToAction(nameof(Index));
-                }
-                catch (Exception ex)
-                {
-                    ModelState.AddModelError("", $"Error al guardar los datos: {ex.Message}");
-                }
+                _context.Add(producto);
+                await _context.SaveChangesAsync();
+                return RedirectToAction(nameof(Index));
             }
-            ViewData["CategoriaId"] = new SelectList(_context.Categorias, "Id", "Nombre", producto.CategoriaId);
-            ViewData["ProveedorId"] = new SelectList(_context.Proveedores, "Id", "Nombre", producto.ProveedorId);
+
+            CargarListasDesplegables();
             return View(producto);
         }
 
-        // GET: Productoes/Edit/5
+        // GET: Producto/Edit/5
+        [HttpGet("Edit/{id}")]
         public async Task<IActionResult> Edit(int? id)
         {
-            if (id == null || _context.Productos == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
 
             var producto = await _context.Productos.FindAsync(id);
-            if (producto == null)
-            {
-                return NotFound();
-            }
-            ViewData["CategoriaId"] = new SelectList(_context.Categorias, "Id", "Nombre", producto.CategoriaId);
-            ViewData["ProveedorId"] = new SelectList(_context.Proveedores, "Id", "Nombre", producto.ProveedorId);
+            if (producto == null) return NotFound();
+
+            CargarListasDesplegables(producto.CategoriaId, producto.ProveedorId);
             return View(producto);
         }
 
-        // POST: Productoes/Edit/5
-        [HttpPost]
+        // POST: Producto/Edit/5
+        [HttpPost("Edit/{id}")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Nombre,Precio,Descripcion,CategoriaId,ProveedorId")] Producto producto)
+        public async Task<IActionResult> Edit(int id, Producto producto)
         {
-            if (id != producto.Id)
-            {
-                return NotFound();
-            }
+            if (id != producto.Id) return NotFound();
 
             if (ModelState.IsValid)
             {
@@ -115,58 +93,63 @@ namespace Domi_Express.Controllers
                     await _context.SaveChangesAsync();
                     return RedirectToAction(nameof(Index));
                 }
-                catch (DbUpdateException ex)
+                catch (DbUpdateConcurrencyException)
                 {
-                    ModelState.AddModelError("", $"Error al actualizar los datos: {ex.Message}");
+                    if (!ProductoExists(producto.Id))
+                        return NotFound();
+                    else
+                        throw;
                 }
             }
-            ViewData["CategoriaId"] = new SelectList(_context.Categorias, "Id", "Nombre", producto.CategoriaId);
-            ViewData["ProveedorId"] = new SelectList(_context.Proveedores, "Id", "Nombre", producto.ProveedorId);
+
+            CargarListasDesplegables(producto.CategoriaId, producto.ProveedorId);
             return View(producto);
         }
 
-        // GET: Productoes/Delete/5
+        // GET: Producto/Delete/5
+        [HttpGet("Delete/{id}")]
         public async Task<IActionResult> Delete(int? id)
         {
-            if (id == null || _context.Productos == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
 
-            var producto = await _context.Productos
-                .Include(p => p.Categoria)
-                .Include(p => p.Proveedor)
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (producto == null)
-            {
-                return NotFound();
-            }
+            var producto = await ObtenerProductoPorId(id);
+            if (producto == null) return NotFound();
 
             return View(producto);
         }
 
-        // POST: Productoes/Delete/5
-        [HttpPost, ActionName("Delete")]
+        // POST: Producto/Delete/5
+        [HttpPost("Delete/{id}"), ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            if (_context.Productos == null)
-            {
-                return Problem("Entity set 'DomiExpressContext.Productos'  is null.");
-            }
             var producto = await _context.Productos.FindAsync(id);
             if (producto != null)
             {
                 _context.Productos.Remove(producto);
+                await _context.SaveChangesAsync();
             }
-
-            await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
+        }
+
+        // Métodos privados reutilizables
+        private async Task<Producto> ObtenerProductoPorId(int? id)
+        {
+            return await _context.Productos
+                .Include(p => p.Categoria)
+                .Include(p => p.Proveedor)
+                .FirstOrDefaultAsync(m => m.Id == id);
+        }
+
+        private void CargarListasDesplegables(int? categoriaSeleccionada = null, int? proveedorSeleccionado = null)
+        {
+            ViewBag.CategoriaId = new SelectList(_context.Categorias, "Id", "Nombre", categoriaSeleccionada);
+            ViewBag.ProveedorId = new SelectList(_context.Proveedores, "Id", "Nombre", proveedorSeleccionado);
         }
 
         private bool ProductoExists(int id)
         {
-            return (_context.Productos?.Any(e => e.Id == id)).GetValueOrDefault();
+            return _context.Productos.Any(e => e.Id == id);
         }
     }
 }

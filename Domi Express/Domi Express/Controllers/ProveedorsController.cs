@@ -1,15 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Domi_Express.Data;
 using Domi_Express.Models;
 
 namespace Domi_Express.Controllers
 {
+    [Route("Proveedor")] // Personaliza la ruta base del controlador
     public class ProveedorsController : Controller
     {
         private readonly DomiExpressContext _context;
@@ -19,42 +17,37 @@ namespace Domi_Express.Controllers
             _context = context;
         }
 
-        // GET: Proveedors
+        // GET: Proveedor
+        [HttpGet("")]
         public async Task<IActionResult> Index()
         {
             return View(await _context.Proveedores.ToListAsync());
         }
 
-        // GET: Proveedors/Details/5
+        // GET: Proveedor/Details/5
+        [HttpGet("Details/{id}")]
         public async Task<IActionResult> Details(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
 
             var proveedor = await _context.Proveedores
                 .FirstOrDefaultAsync(m => m.Id == id);
-            if (proveedor == null)
-            {
-                return NotFound();
-            }
+            if (proveedor == null) return NotFound();
 
             return View(proveedor);
         }
 
-        // GET: Proveedors/Create
+        // GET: Proveedor/Create
+        [HttpGet("Create")]
         public IActionResult Create()
         {
             return View();
         }
 
-        // POST: Proveedors/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
+        // POST: Proveedor/Create
+        [HttpPost("Create")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Nombre,Telefono,Direccion,Email")] Proveedor proveedor)
+        public async Task<IActionResult> Create(Proveedor proveedor)
         {
             if (ModelState.IsValid)
             {
@@ -65,33 +58,24 @@ namespace Domi_Express.Controllers
             return View(proveedor);
         }
 
-        // GET: Proveedors/Edit/5
+        // GET: Proveedor/Edit/5
+        [HttpGet("Edit/{id}")]
         public async Task<IActionResult> Edit(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
 
             var proveedor = await _context.Proveedores.FindAsync(id);
-            if (proveedor == null)
-            {
-                return NotFound();
-            }
+            if (proveedor == null) return NotFound();
+
             return View(proveedor);
         }
 
-        // POST: Proveedors/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
+        // POST: Proveedor/Edit/5
+        [HttpPost("Edit/{id}")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Nombre,Telefono,Direccion,Email")] Proveedor proveedor)
+        public async Task<IActionResult> Edit(int id, Proveedor proveedor)
         {
-            if (id != proveedor.Id)
-            {
-                return NotFound();
-            }
+            if (id != proveedor.Id) return NotFound();
 
             if (ModelState.IsValid)
             {
@@ -99,43 +83,34 @@ namespace Domi_Express.Controllers
                 {
                     _context.Update(proveedor);
                     await _context.SaveChangesAsync();
+                    return RedirectToAction(nameof(Index));
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!ProveedorExists(proveedor.Id))
-                    {
+                    if (!_context.Proveedores.Any(e => e.Id == proveedor.Id))
                         return NotFound();
-                    }
                     else
-                    {
                         throw;
-                    }
                 }
-                return RedirectToAction(nameof(Index));
             }
             return View(proveedor);
         }
 
-        // GET: Proveedors/Delete/5
+        // GET: Proveedor/Delete/5
+        [HttpGet("Delete/{id}")]
         public async Task<IActionResult> Delete(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
 
             var proveedor = await _context.Proveedores
                 .FirstOrDefaultAsync(m => m.Id == id);
-            if (proveedor == null)
-            {
-                return NotFound();
-            }
+            if (proveedor == null) return NotFound();
 
             return View(proveedor);
         }
 
-        // POST: Proveedors/Delete/5
-        [HttpPost, ActionName("Delete")]
+        // POST: Proveedor/Delete/5
+        [HttpPost("Delete/{id}"), ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
@@ -143,15 +118,10 @@ namespace Domi_Express.Controllers
             if (proveedor != null)
             {
                 _context.Proveedores.Remove(proveedor);
+                await _context.SaveChangesAsync();
             }
 
-            await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
-        }
-
-        private bool ProveedorExists(int id)
-        {
-            return _context.Proveedores.Any(e => e.Id == id);
         }
     }
 }

@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Domi_Express.Data;
@@ -10,6 +6,7 @@ using Domi_Express.Models;
 
 namespace Domi_Express.Controllers
 {
+    [Route("Stock")]
     public class StocksController : Controller
     {
         private readonly DomiExpressContext _context;
@@ -19,130 +16,128 @@ namespace Domi_Express.Controllers
             _context = context;
         }
 
-        // GET: Stocks
+        // GET: Stock
+        [HttpGet("")]
         public async Task<IActionResult> Index()
         {
-            var domiExpressContext = _context.Stocks.Include(s => s.Producto);
-            return View(await domiExpressContext.ToListAsync());
+            var stocks = await _context.Stocks.Include(s => s.Producto).ToListAsync();
+            return View(stocks);
         }
 
-        // GET: Stocks/Details/5
-        public async Task<IActionResult> Details(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var stock = await _context.Stocks
-                .Include(s => s.Producto)
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (stock == null)
-            {
-                return NotFound();
-            }
-
-            return View(stock);
-        }
-
-        // GET: Stocks/Create
+        // GET: Stock/Create
+        [HttpGet("Create")]
         public IActionResult Create()
         {
-            ViewData["ProductoId"] = new SelectList(_context.Productos, "Id", "Id");
+            ViewBag.ProductoId = new SelectList(_context.Productos, "Id", "Nombre");
             return View();
         }
 
-        // POST: Stocks/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
+        // POST: Stock/Create
+        [HttpPost("Create")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,ProductoId,CantidadDisponible,FechaUltimaModificacion")] Stock stock)
+        public async Task<IActionResult> Create([Bind("ProductoId, CantidadDisponible")] Stock stock)
         {
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                _context.Add(stock);
+                // Log para errores
+                foreach (var error in ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    Console.WriteLine($"Error: {error.ErrorMessage}");
+                }
+
+                // Recargar lista de productos si hay errores
+                ViewBag.ProductoId = new SelectList(_context.Productos, "Id", "Nombre", stock.ProductoId);
+                return View(stock);
+            }
+
+            try
+            {
+                // Asignar la fecha actual
+                stock.FechaUltimaModificacion = DateTime.Now;
+
+                // Agregar y guardar en la base de datos
+                _context.Stocks.Add(stock);
                 await _context.SaveChangesAsync();
+
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["ProductoId"] = new SelectList(_context.Productos, "Id", "Id", stock.ProductoId);
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error al guardar: {ex.Message}");
+                ModelState.AddModelError("", "Ocurrió un error al guardar el Stock.");
+            }
+
+            ViewBag.ProductoId = new SelectList(_context.Productos, "Id", "Nombre", stock.ProductoId);
             return View(stock);
         }
 
-        // GET: Stocks/Edit/5
+        // GET: Stock/Details/5
+        [HttpGet("Details/{id}")]
+        public async Task<IActionResult> Details(int? id)
+        {
+            if (id == null) return NotFound();
+
+            var stock = await _context.Stocks.Include(s => s.Producto).FirstOrDefaultAsync(m => m.Id == id);
+            if (stock == null) return NotFound();
+
+            return View(stock);
+        }
+
+        // GET: Stock/Edit/5
+        [HttpGet("Edit/{id}")]
         public async Task<IActionResult> Edit(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
 
             var stock = await _context.Stocks.FindAsync(id);
-            if (stock == null)
-            {
-                return NotFound();
-            }
-            ViewData["ProductoId"] = new SelectList(_context.Productos, "Id", "Id", stock.ProductoId);
+            if (stock == null) return NotFound();
+
+            ViewBag.ProductoId = new SelectList(_context.Productos, "Id", "Nombre", stock.ProductoId);
             return View(stock);
         }
 
-        // POST: Stocks/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
+        // POST: Stock/Edit/5
+        [HttpPost("Edit/{id}")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,ProductoId,CantidadDisponible,FechaUltimaModificacion")] Stock stock)
+        public async Task<IActionResult> Edit(int id, [Bind("Id, ProductoId, CantidadDisponible")] Stock stock)
         {
-            if (id != stock.Id)
+            if (id != stock.Id) return NotFound();
+
+            if (!ModelState.IsValid)
             {
-                return NotFound();
+                ViewBag.ProductoId = new SelectList(_context.Productos, "Id", "Nombre", stock.ProductoId);
+                return View(stock);
             }
 
-            if (ModelState.IsValid)
+            try
             {
-                try
-                {
-                    _context.Update(stock);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!StockExists(stock.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
+                stock.FechaUltimaModificacion = DateTime.Now;
+                _context.Update(stock);
+                await _context.SaveChangesAsync();
+
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["ProductoId"] = new SelectList(_context.Productos, "Id", "Id", stock.ProductoId);
-            return View(stock);
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!_context.Stocks.Any(e => e.Id == stock.Id)) return NotFound();
+                throw;
+            }
         }
 
-        // GET: Stocks/Delete/5
+        // GET: Stock/Delete/5
+        [HttpGet("Delete/{id}")]
         public async Task<IActionResult> Delete(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
 
-            var stock = await _context.Stocks
-                .Include(s => s.Producto)
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (stock == null)
-            {
-                return NotFound();
-            }
+            var stock = await _context.Stocks.Include(s => s.Producto).FirstOrDefaultAsync(m => m.Id == id);
+            if (stock == null) return NotFound();
 
             return View(stock);
         }
 
-        // POST: Stocks/Delete/5
-        [HttpPost, ActionName("Delete")]
+        // POST: Stock/Delete/5
+        [HttpPost("Delete/{id}"), ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
@@ -150,15 +145,9 @@ namespace Domi_Express.Controllers
             if (stock != null)
             {
                 _context.Stocks.Remove(stock);
+                await _context.SaveChangesAsync();
             }
-
-            await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
-        }
-
-        private bool StockExists(int id)
-        {
-            return _context.Stocks.Any(e => e.Id == id);
         }
     }
 }
