@@ -24,6 +24,19 @@ namespace Domi_Express.Controllers
             return View(stocks);
         }
 
+        // GET: Stock/Details/5
+        [HttpGet("Details/{id}")]
+        public async Task<IActionResult> Details(int? id)
+        {
+            if (id == null) return NotFound();
+
+            var stock = await _context.Stocks.Include(s => s.Producto)
+                                             .FirstOrDefaultAsync(m => m.Id == id);
+            if (stock == null) return NotFound();
+
+            return View(stock);
+        }
+
         // GET: Stock/Create
         [HttpGet("Create")]
         public IActionResult Create()
@@ -37,49 +50,14 @@ namespace Domi_Express.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("ProductoId, CantidadDisponible")] Stock stock)
         {
-            if (!ModelState.IsValid)
+            if (ModelState.IsValid)
             {
-                // Log para errores
-                foreach (var error in ModelState.Values.SelectMany(v => v.Errors))
-                {
-                    Console.WriteLine($"Error: {error.ErrorMessage}");
-                }
-
-                // Recargar lista de productos si hay errores
-                ViewBag.ProductoId = new SelectList(_context.Productos, "Id", "Nombre", stock.ProductoId);
-                return View(stock);
-            }
-
-            try
-            {
-                // Asignar la fecha actual
                 stock.FechaUltimaModificacion = DateTime.Now;
-
-                // Agregar y guardar en la base de datos
-                _context.Stocks.Add(stock);
+                _context.Add(stock);
                 await _context.SaveChangesAsync();
-
                 return RedirectToAction(nameof(Index));
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error al guardar: {ex.Message}");
-                ModelState.AddModelError("", "Ocurrió un error al guardar el Stock.");
-            }
-
             ViewBag.ProductoId = new SelectList(_context.Productos, "Id", "Nombre", stock.ProductoId);
-            return View(stock);
-        }
-
-        // GET: Stock/Details/5
-        [HttpGet("Details/{id}")]
-        public async Task<IActionResult> Details(int? id)
-        {
-            if (id == null) return NotFound();
-
-            var stock = await _context.Stocks.Include(s => s.Producto).FirstOrDefaultAsync(m => m.Id == id);
-            if (stock == null) return NotFound();
-
             return View(stock);
         }
 
@@ -103,25 +81,23 @@ namespace Domi_Express.Controllers
         {
             if (id != stock.Id) return NotFound();
 
-            if (!ModelState.IsValid)
+            if (ModelState.IsValid)
             {
-                ViewBag.ProductoId = new SelectList(_context.Productos, "Id", "Nombre", stock.ProductoId);
-                return View(stock);
+                try
+                {
+                    stock.FechaUltimaModificacion = DateTime.Now;
+                    _context.Update(stock);
+                    await _context.SaveChangesAsync();
+                    return RedirectToAction(nameof(Index));
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    if (!_context.Stocks.Any(e => e.Id == stock.Id)) return NotFound();
+                    else throw;
+                }
             }
-
-            try
-            {
-                stock.FechaUltimaModificacion = DateTime.Now;
-                _context.Update(stock);
-                await _context.SaveChangesAsync();
-
-                return RedirectToAction(nameof(Index));
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!_context.Stocks.Any(e => e.Id == stock.Id)) return NotFound();
-                throw;
-            }
+            ViewBag.ProductoId = new SelectList(_context.Productos, "Id", "Nombre", stock.ProductoId);
+            return View(stock);
         }
 
         // GET: Stock/Delete/5
@@ -130,7 +106,8 @@ namespace Domi_Express.Controllers
         {
             if (id == null) return NotFound();
 
-            var stock = await _context.Stocks.Include(s => s.Producto).FirstOrDefaultAsync(m => m.Id == id);
+            var stock = await _context.Stocks.Include(s => s.Producto)
+                                             .FirstOrDefaultAsync(m => m.Id == id);
             if (stock == null) return NotFound();
 
             return View(stock);
