@@ -20,13 +20,25 @@ namespace Domi_Express.Controllers
 
         // GET: Producto
         [HttpGet("")]
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string searchString)
         {
-            var productos = await _context.Productos
+            // Obtén todos los productos, incluyendo relaciones
+            var productos = _context.Productos
                 .Include(p => p.Categoria)
                 .Include(p => p.Proveedor)
-                .ToListAsync();
-            return View(productos);
+                .AsQueryable();
+
+            // Filtrar por búsqueda
+            if (!string.IsNullOrEmpty(searchString))
+            {
+                productos = productos.Where(p =>
+                    p.Nombre.Contains(searchString) ||
+                    p.Descripcion.Contains(searchString) ||
+                    p.Precio.ToString().Contains(searchString)
+                );
+            }
+
+            return View(await productos.ToListAsync());
         }
 
         // GET: Producto/Details/5

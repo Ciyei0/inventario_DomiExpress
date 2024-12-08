@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Domi_Express.Data;
@@ -18,10 +20,21 @@ namespace Domi_Express.Controllers
 
         // GET: Stock
         [HttpGet("")]
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string searchString)
         {
-            var stocks = await _context.Stocks.Include(s => s.Producto).ToListAsync();
-            return View(stocks);
+            // Consulta inicial
+            var stocks = _context.Stocks.Include(s => s.Producto).AsQueryable();
+
+            // Filtrar por búsqueda
+            if (!string.IsNullOrEmpty(searchString))
+            {
+                stocks = stocks.Where(s =>
+                    s.Producto.Nombre.Contains(searchString) ||
+                    s.CantidadDisponible.ToString().Contains(searchString));
+            }
+
+            // Retornar la vista con los resultados filtrados
+            return View(await stocks.ToListAsync());
         }
 
         // GET: Stock/Details/5

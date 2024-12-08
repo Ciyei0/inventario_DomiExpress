@@ -7,7 +7,7 @@ using Domi_Express.Models;
 
 namespace Domi_Express.Controllers
 {
-    [Route("Categoria")]
+    [Route("Categoria")] // Personaliza la ruta base del controlador
     public class CategoriasController : Controller
     {
         private readonly DomiExpressContext _context;
@@ -17,21 +17,47 @@ namespace Domi_Express.Controllers
             _context = context;
         }
 
+        // GET: Categoria
         [HttpGet("")]
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string searchString)
         {
-            return View(await _context.Categorias.ToListAsync());
+            var categorias = _context.Categorias.AsQueryable();
+
+            if (!string.IsNullOrEmpty(searchString))
+            {
+                categorias = categorias.Where(c =>
+                    c.Nombre.Contains(searchString) ||
+                    c.Descripcion.Contains(searchString));
+            }
+
+            return View(await categorias.ToListAsync());
         }
 
+        // GET: Categoria/Details/5
+        [HttpGet("Details/{id}")]
+        public async Task<IActionResult> Details(int? id)
+        {
+            if (id == null) return NotFound();
+
+            var categoria = await _context.Categorias
+                .FirstOrDefaultAsync(c => c.Id == id);
+
+            if (categoria == null) return NotFound();
+
+            return View(categoria);
+        }
+
+        // GET: Categoria/Create
         [HttpGet("Create")]
         public IActionResult Create()
         {
             return View();
         }
 
+        // POST: Categoria/Create
         [HttpPost("Create")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Nombre,Descripcion")] Categoria categoria)
+        public async Task<IActionResult> Create(Categoria categoria)
         {
             if (ModelState.IsValid)
             {
@@ -42,6 +68,7 @@ namespace Domi_Express.Controllers
             return View(categoria);
         }
 
+        // GET: Categoria/Edit/5
         [HttpGet("Edit/{id}")]
         public async Task<IActionResult> Edit(int? id)
         {
@@ -53,9 +80,10 @@ namespace Domi_Express.Controllers
             return View(categoria);
         }
 
+        // POST: Categoria/Edit/5
         [HttpPost("Edit/{id}")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Nombre,Descripcion")] Categoria categoria)
+        public async Task<IActionResult> Edit(int id, Categoria categoria)
         {
             if (id != categoria.Id) return NotFound();
 
@@ -76,6 +104,34 @@ namespace Domi_Express.Controllers
                 }
             }
             return View(categoria);
+        }
+
+        // GET: Categoria/Delete/5
+        [HttpGet("Delete/{id}")]
+        public async Task<IActionResult> Delete(int? id)
+        {
+            if (id == null) return NotFound();
+
+            var categoria = await _context.Categorias
+                .FirstOrDefaultAsync(c => c.Id == id);
+
+            if (categoria == null) return NotFound();
+
+            return View(categoria);
+        }
+
+        // POST: Categoria/Delete/5
+        [HttpPost("Delete/{id}"), ActionName("Delete")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteConfirmed(int id)
+        {
+            var categoria = await _context.Categorias.FindAsync(id);
+            if (categoria != null)
+            {
+                _context.Categorias.Remove(categoria);
+                await _context.SaveChangesAsync();
+            }
+            return RedirectToAction(nameof(Index));
         }
     }
 }

@@ -19,9 +19,22 @@ namespace Domi_Express.Controllers
 
         // GET: Proveedor
         [HttpGet("")]
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string searchString)
         {
-            return View(await _context.Proveedores.ToListAsync());
+            // Consulta inicial
+            var proveedores = _context.Proveedores.AsQueryable();
+
+            // Filtrado de búsqueda
+            if (!string.IsNullOrEmpty(searchString))
+            {
+                proveedores = proveedores.Where(p =>
+                    p.Nombre.Contains(searchString) ||
+                    p.Telefono.Contains(searchString) ||
+                    p.Email.Contains(searchString));
+            }
+
+            // Retorna la vista con los datos filtrados
+            return View(await proveedores.ToListAsync());
         }
 
         // GET: Proveedor/Details/5

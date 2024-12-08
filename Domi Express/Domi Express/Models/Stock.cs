@@ -13,7 +13,7 @@ namespace Domi_Express.Models
         public int ProductoId { get; set; }
 
         [ForeignKey("ProductoId")]
-        public Producto Producto { get; set; }
+        public Producto? Producto { get; set; }
 
         [Range(1, int.MaxValue, ErrorMessage = "La cantidad disponible debe ser mayor a 0.")]
         public int CantidadDisponible { get; set; }

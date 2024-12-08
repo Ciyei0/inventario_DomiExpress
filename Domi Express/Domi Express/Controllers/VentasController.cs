@@ -20,9 +20,22 @@ namespace Domi_Express.Controllers
 
         // GET: Venta
         [HttpGet("")]
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string searchString)
         {
-            return View(await _context.Ventas.Include(v => v.Producto).ToListAsync());
+            // Consulta inicial
+            var ventas = _context.Ventas.Include(v => v.Producto).AsQueryable();
+
+            // Filtrar por búsqueda
+            if (!string.IsNullOrEmpty(searchString))
+            {
+                ventas = ventas.Where(v =>
+                    v.Producto.Nombre.Contains(searchString) ||
+                    v.CantidadVendida.ToString().Contains(searchString) ||
+                    v.FechaVenta.ToString("g").Contains(searchString));
+            }
+
+            // Retornar la vista con los resultados filtrados
+            return View(await ventas.ToListAsync());
         }
 
         // GET: Venta/Details/5
